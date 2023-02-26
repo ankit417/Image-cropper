@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Crop Image</title>
+    <style>
+      .container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+      #clip-button {
+        background-color: #4caf50;
+        border: none;
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        transform: translateX(-100%);
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <button id="clip-button" onclick="clipme()">Clip Image</button>
+      <canvas id="canvas" width="800" height="800"></canvas>
+    </div>
+
+    <script>
+      var canvas = document.getElementById("canvas");
+      var ctx = canvas.getContext("2d");
+      var cw, ch;
+      var points = [];
+
+      var image = new Image();
+      var iWidth, iHeight;
+
+      image.src = "./document.jpg";
+      image.onload = function () {
+        var scale = Math.min(
+          canvas.width / image.width,
+          canvas.height / image.height
+        );
+
+        iWidth = image.width * scale;
+        iHeight = image.height * scale;
+
+        console.log("scale", scale);
+        ctx.drawImage(image, 0, 0, image.width * scale, image.height * scale);
+
+        canvas.addEventListener("mousedown", function (e) {
+          var canvasOffset = canvas.getBoundingClientRect();
+
+          var x = event.clientX - canvasOffset.left;
+          var y = event.clientY - canvasOffset.top;
+          points.push({ x, y });
+
+          outlineIt();
+          console.log("points", points);
+
+          console.log("Mouse down at (" + x + ", " + y + ")");
+        });
+
+        function outlineIt() {
+          ctx.beginPath();
+          ctx.moveTo(points[0].x, points[0].y);
+          for (var i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i].x, points[i].y);
+          }
+          ctx.stroke();
+          ctx.strokeStyle = "red";
+          ctx.beginPath();
+          ctx.arc(points[0].x, points[0].y, 10, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.stroke();
+        }
+      };
+
+      function clipme() {
+        var minX = 10000;
+        var minY = 10000;
+        var maxX = -10000;
+        var maxY = -10000;
+        for (var i = 1; i < points.length; i++) {
+          var p = points[i];
+          if (p.x < minX) {
+            minX = p.x;
+          }
+          if (p.y < minY) {
+            minY = p.y;
+          }
+          if (p.x > maxX) {
+            maxX = p.x;
+          }
+          if (p.y > maxY) {
+            maxY = p.y;
+          }
+        }
+        var width = maxX - minX;
+        var height = maxY - minY;
+
+        console.log(width, height);
+        ctx.save();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.beginPath();
+        console.log(points);
+        ctx.moveTo(points[0].x, points[0].y);
+        for (var i = 1; i < points.length; i++) {
+          ctx.lineTo(points[i].x, points[i].y);
+        }
+        ctx.closePath();
+
+        ctx.clip();
+        ctx.drawImage(image, 0, 0, iWidth, iHeight);
+        ctx.restore();
+      }
+    </script>
+  </body>
+</html>
